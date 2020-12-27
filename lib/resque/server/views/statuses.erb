@@ -38,32 +38,44 @@
 <table class="table table-bordered table-hover">
 <thead class="thead-dark">
   <tr>
-    <th>Started At</th>
-    <th>Name</th>
-    <th class="duration">Duration</th>
-    <th class="status">Status</th>
-    <th>Progress</th>
-    <th>Message</th>
+    <th style="width: 5%;">Status</th>
+    <th style="width: 25%;">Name</th>
+    <th style="width: 5%;">Runtime</th>
+    <th style="width: 5%;">Start Time</th>
+    <th style="width: 5%;">Update Time</th>
+    <th style="width: 7%;">Progress</th>
+    <th style="width: 40%;">Message</th>
     <th>Actions</th>
   </tr>
 </thead>
 <tbody>
+
   <% unless @statuses.empty? %>
     <% @statuses.each do |status| %>
+    <%
+      duration = status.working? ? Time.now - status.started_at : status.time - status.started_at.to_i
+     %>
     <tr>
-      <td><%= status.time.strftime("%Y/%m/%d %H:%M:%S") %></td>
-      <td><a href="<%= u(:statuses) %>/<%= status.uuid %>"><%= status.name %></a></td>
-      <td class="duration"><%= status['end_time'].present? ? "#{((status['end_time'].to_time - status.time) / 60).round(2)} minutes" : nil %></td>
-      <td class="status status-<%= status.status %>"><%= status.status.capitalize %></td>
+      <td>
+        <span class="badge status-badge status-<%= status.status %>">
+          <%= status.status.capitalize %>
+        </span>
+      </td>
+      <td><a href="<%= u(:statuses) %>/<%= status.uuid %>"><%= status.name %></a>
+      </td>
+      <td class="duration"><%= duration.to_i %> s</td>
+     <td><%= status.started_at&.strftime("%Y-%m-%d %H:%M:%S") %></td>
+      <td class="tick_time"><%= status.time.strftime("%Y-%m-%d %H:%M:%S") %></td>
       <td class="" style="width:120px">
 <div class="progress">
-  <div class="progress-bar <%= status.working? ? 'progress-bar-striped progress-bar-animated' : '' %> <%= progress[status.status.to_sym] %>" role="progressbar" style="width: <%=status.pct_complete%>%;" aria-valuenow="<%=status.pct_complete %>" aria-valuemin="0" aria-valuemax="100"><%=status.pct_complete%>%</div>
+  <div class="progress-bar <%= status.working? ? 'progress-bar-striped progress-bar-animated' : '' %> status-bar" role="progressbar" style="width: <%=status.pct_complete%>%;" aria-valuenow="<%=status.pct_complete %>" aria-valuemin="0" aria-valuemax="100"><%=status.pct_complete%>%</div>
 </div>
       </td>
-      <td class="message"><div><%= status.message %></div></td>
       <td>
-      <% if status.killable? %><a href="<%= u(:statuses) %>/<%= status.uuid %>/kill">Kill</a><% end %>
-      <% if status.failed? || status.completed? %><a href="<%= u(:statuses) %>/<%= status.uuid %>/rerun">Rerun</a><% end %>
+        <div class="message"><%= status.message %></div>
+      </td>
+      <td>
+      <% if status.killable? %><a class="kill" href="<%= u(:statuses) %>/<%= status.uuid %>/kill">Kill</a><% end %>
       </td>
     </tr>
     <% end %>

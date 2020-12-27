@@ -211,6 +211,7 @@ module Resque
         hash_accessor :status
         hash_accessor :message
         hash_accessor :time
+        hash_accessor :started_at
         hash_accessor :options
 
         hash_accessor :num
@@ -224,7 +225,7 @@ module Resque
           super nil
           base_status = {
             'time' => Time.now.to_i,
-            'status' => Resque::Plugins::Status::STATUS_QUEUED
+            'status' => Resque::Plugins::Status::STATUS_QUEUED,
           }
           base_status['uuid'] = args.shift if args.length > 1
           status_hash = args.inject(base_status) do |final, m|
@@ -250,7 +251,11 @@ module Resque
         # Return the time of the status initialization. If set returns a <tt>Time</tt>
         # object, otherwise returns nil
         def time
-          time? ? Time.at(self['time']) : nil
+          time? ? Time.at(self['time'].to_i) : nil
+        end
+
+        def started_at
+          started_at? ? Time.at(self['started_at'].to_i) : nil
         end
 
         Resque::Plugins::Status::STATUSES.each do |status|

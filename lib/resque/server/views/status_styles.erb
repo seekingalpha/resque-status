@@ -18,37 +18,39 @@
 
   table {
     line-height: 1.5;
+    max-width: 100%;
+    white-space: nowrap;
   }
   tr th:first-child {
     width: 165px;
   }
 
   th.progress {
-    width: 100px;
     text-align: center;
   }
   th.status {
-    width: 100px;
     text-align: center;
   }
   th.duration, td.duration {
-    width: 100px;
     text-align:center;
+  }
+  th.tick_time, td.tick_time {
+    text-align: center;
   }
   td.progress {
     position: relative;
-    width: 100px;
     display:block;
   }
   td.status {
     font-weight: bold;
     text-align: center;
   }
+  span.status-badge {
+    width: 100px;
+  }
   td.message {
-    width: 200px;
   }
   td.message div {
-    width: inherit;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -112,6 +114,9 @@
     padding: 0px;
     font-weight: bold;
   }
+  .status-bar {
+    background: #528499 !important;
+  }
   .status-message {
     font-weight: bold;
   }
@@ -120,29 +125,20 @@
     padding: 10px 0px;
     color: #999;
   }
-  td.status-completed div.progress-bar {
-    background:#61BF55;
-  }
-  td.status-failed div.progress-bar {
-   background: #ffc6c0;
-  }
-  td.status-working div.progress-bar {
-    background: #528499;
-  }
-  td.status-killed div.progress-bar {
-    background: #B84F16;
+  .status-badge {
+    color: #fff;
   }
   .status-completed {
-    color:#61BF55;
+    background:#61BF55;
   }
   .status-failed {
-    color: #E47E74;
+    background: #E47E74;
   }
   .status-working {
-    color: #528499;
+    background: #528499;
   }
   .status-killed {
-    color: #B84F16;
+    background: #B84F16;
   }
   #main a.kill:link, #main a.kill:visited {
     color: #B84F16;
