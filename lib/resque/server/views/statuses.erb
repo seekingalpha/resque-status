@@ -53,7 +53,8 @@
   <% unless @statuses.empty? %>
     <% @statuses.each do |status| %>
     <%
-      duration = status.working? ? Time.now - status.started_at : status.time - status.started_at.to_i
+        duration = Time.now - status.started_at.to_i if status.working?
+        duration = status.time.to_i - status.started_at.to_i unless status.working?
      %>
     <tr>
       <td>
