@@ -194,6 +194,7 @@ class TestResquePluginsStatus < Minitest::Test
         assert_includes Resque::Plugins::Status::Hash.kill_ids, @uuid
         @performed = KillableJob.perform(*@payload['args'])
         @status = Resque::Plugins::Status::Hash.get(@uuid)
+        @status.message = "doing something"
       end
 
       it "set the status to killed" do
@@ -204,6 +205,11 @@ class TestResquePluginsStatus < Minitest::Test
       it "only perform iterations up to kill" do
         assert_equal 1, Resque.redis.get("#{@uuid}:iterations").to_i
       end
+
+      it "save message" do
+        assert_equal "doing something", @status.message
+      end
+
 
       it "not persist the kill key" do
         refute_includes Resque::Plugins::Status::Hash.kill_ids, @uuid
@@ -265,6 +271,7 @@ class TestResquePluginsStatus < Minitest::Test
         @performed = KillableJob.perform(*@payload2['args'])
 
         @status1, @status2 = Resque::Plugins::Status::Hash.mget([@uuid1, @uuid2])
+        @status2.message = "doing something"
       end
 
       it "set the status to killed" do
@@ -326,14 +333,15 @@ class TestResquePluginsStatus < Minitest::Test
       describe "#completed" do
         before do
           @job.completed
+          @job.status.message = "this message should be deleted"
         end
 
         it "set status" do
           assert @job.status.completed?
         end
 
-        it "set message" do
-          assert_match(/complete/i, @job.status.message)
+        it "empty the last message" do
+          assert_match("", @job.status.message)
         end
 
       end

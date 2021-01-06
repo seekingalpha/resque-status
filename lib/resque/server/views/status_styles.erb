@@ -48,9 +48,15 @@
   span.status-badge {
     width: 100px;
   }
-  td.message {
+  td div.message {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  td.message div {
+  td.job-name {
+    max-width: 450px;
+  }
+  td.job-name div {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

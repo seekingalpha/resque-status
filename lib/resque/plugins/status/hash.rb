@@ -82,7 +82,7 @@ module Resque
 
         def self.count
           redis.zcard(set_key)
-        end 
+        end
 
         # Return <tt>num</tt> Resque::Plugins::Status::Hash objects in reverse chronological order.
         # By default returns the entire set.
@@ -90,14 +90,14 @@ module Resque
         # @param [Numeric] range_end The optional ending range
         # @example retuning the last 20 statuses
         #   Resque::Plugins::Status::Hash.statuses(0, 20)
-        def self.statuses(range_start = nil, range_end = nil, filters = [], page = 0)
+        def self.statuses(range_start = nil, range_end = nil, filters)
           ids = status_ids(range_start, range_end)
           statuses = mget(ids).compact || []
           filter_statuses(statuses, filters)
         end
 
         def self.filter_statuses(statuses, filters)
-          return statuses unless filters.present?
+          return statuses if filters.empty?
 
           statuses = statuses.filter {|status| status.status == filters[:status] } if filters[:status]
           statuses = statuses.select { |job| job.name =~ /#{filters[:job]}/i } if filters[:job]

@@ -39,7 +39,7 @@
 <thead class="thead-dark">
   <tr>
     <th style="width: 5%;">Status</th>
-    <th style="width: 25%;">Name</th>
+    <th style="width: 30%;">Name</th>
     <th style="width: 5%;">Runtime</th>
     <th style="width: 5%;">Start Time</th>
     <th style="width: 5%;">Update Time</th>
@@ -55,6 +55,12 @@
     <%
         duration = Time.now - status.started_at.to_i if status.working?
         duration = status.time.to_i - status.started_at.to_i unless status.working?
+        progressbar_styles = []
+        progressbar_styles << 'progress-bar-animated' if status.working?
+        progressbar_styles << 'progress-bar-striped' if status.working?
+        progressbar_styles << 'bg-info' if status.working?
+        progressbar_styles << 'bg-danger' if status.failed? || status.killed?
+        progressbar_styles << 'bg-success' if status.completed?
      %>
     <tr>
       <td>
@@ -62,14 +68,19 @@
           <%= status.status.capitalize %>
         </span>
       </td>
-      <td><a href="<%= u(:statuses) %>/<%= status.uuid %>"><%= status.name %></a>
+      <td class="job-name">
+         <div>
+          <a href="<%= u(:statuses) %>/<%= status.uuid %>"><%= status.name %></a>
+        </div>
       </td>
       <td class="duration"><%= duration.to_i %> s</td>
      <td><%= status.started_at&.strftime("%Y-%m-%d %H:%M:%S") %></td>
       <td class="tick_time"><%= status.time.strftime("%Y-%m-%d %H:%M:%S") %></td>
       <td class="" style="width:120px">
 <div class="progress">
-  <div class="progress-bar <%= status.working? ? 'progress-bar-striped progress-bar-animated' : '' %> status-bar" role="progressbar" style="width: <%=status.pct_complete%>%;" aria-valuenow="<%=status.pct_complete %>" aria-valuemin="0" aria-valuemax="100"><%=status.pct_complete%>%</div>
+  <div class="progress-bar <%= progressbar_styles.join(' ') %>" role="progressbar" style="width: <%=status.pct_complete%>%;" aria-valuenow="<%=status.pct_complete %>" aria-valuemin="0" aria-valuemax="100">
+    <%=status.pct_complete%>%
+  </div>
 </div>
       </td>
       <td>

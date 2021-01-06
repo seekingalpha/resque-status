@@ -11,10 +11,10 @@ module Resque
 
     def self.registered(app)
       app.get '/statuses' do
-        @filters = params[:filters]
+        @filters = params[:filters] || {}
         @start = params[:start].to_i
         @end = @start + (params[:per_page] || per_page) - 1
-        @statuses = Resque::Plugins::Status::Hash.statuses(nil, nil, @filters, params[:page])
+        @statuses = Resque::Plugins::Status::Hash.statuses(nil, nil, @filters)
         @statuses = @statuses.paginate(page: params[:page], per_page: 25)
 
         status_view(:statuses)

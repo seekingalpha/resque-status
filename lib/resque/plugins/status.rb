@@ -229,10 +229,10 @@ module Resque
 
       # set the status to 'completed' passing along any addional messages
       def completed(*messages)
-        set_status({
+        set_status(*messages, {
           'status' => STATUS_COMPLETED,
-          'message' => nil,
-        }, *messages)
+          'message' => '',
+        })
       end
 
       # kill the current job, setting the status to 'killed' and raising <tt>Killed</tt>
