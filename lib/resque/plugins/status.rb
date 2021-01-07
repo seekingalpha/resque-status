@@ -157,7 +157,7 @@ module Resque
       # If an error occurs within the job's work, it will set the status as failed and
       # re-raise the error.
       def safe_perform!
-        set_status({'status' => STATUS_WORKING})
+        set_status({'status' => STATUS_WORKING, 'started_at' => Time.now.to_i })
         perform
         if status && status.failed?
           on_failure(status.message) if respond_to?(:on_failure)
@@ -229,26 +229,25 @@ module Resque
 
       # set the status to 'completed' passing along any addional messages
       def completed(*messages)
-        set_status({
+        set_status(*messages, {
           'status' => STATUS_COMPLETED,
-          'message' => "Completed at #{Time.now}"
-        }, *messages)
+          'message' => '',
+        })
       end
 
       # kill the current job, setting the status to 'killed' and raising <tt>Killed</tt>
       def kill!
         set_status({
           'status' => STATUS_KILLED,
-          'message' => "Killed at #{Time.now}"
         })
         raise Killed
       end
 
       private
-      def set_status(*args)
-        self.status = [status, {'name'  => self.name}, args].flatten
-      end
 
+      def set_status(*args)
+        self.status = [status, {'name'  => self.name, 'time' => Time.now.to_i}, args].flatten
+      end
     end
   end
 end

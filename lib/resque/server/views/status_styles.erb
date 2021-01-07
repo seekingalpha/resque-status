@@ -1,14 +1,65 @@
 <style type="text/css" media="screen">
+
+  div.filters {
+    background: #f2f2f2;
+    display: inline-block;
+    width: 500px;
+    padding: 5px;
+  }
+  
+  div.filters h4 {
+    font-weight: bold;
+    color: black;
+  }
+
+  div.filters span.filter {
+    
+  }
+
+  table {
+    line-height: 1.5;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+  tr th:first-child {
+    width: 165px;
+  }
+
   th.progress {
-    width: 100px;
+    text-align: center;
+  }
+  th.status {
+    text-align: center;
+  }
+  th.duration, td.duration {
+    text-align:center;
+  }
+  th.tick_time, td.tick_time {
+    text-align: center;
   }
   td.progress {
     position: relative;
-    width: 100px;
     display:block;
   }
   td.status {
     font-weight: bold;
+    text-align: center;
+  }
+  span.status-badge {
+    width: 100px;
+  }
+  td div.message {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  td.job-name {
+    max-width: 450px;
+  }
+  td.job-name div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   td.progress .progress-bar {
     position: absolute;
@@ -23,6 +74,7 @@
     -webkit-opacity: 0.5;
   }
   td.progress .progress-pct {
+    text-align: center;
     z-index: 10;
     color: #333;
   }
@@ -41,6 +93,7 @@
     margin-bottom: 40px;
   }
   .status-progress {
+    text-align: center;
     width: 100%;
     height: 30px;
     border: 1px solid #CCC;
@@ -50,6 +103,7 @@
   }
   .status-progress-bar {
     position:absolute;
+    text-align: center;
     top: 0px;
     left: 0px;
     height: 30px;
@@ -57,6 +111,7 @@
   }
   .status-progress p {
     position:absolute;
+    text-align: center;
     top: 5px;
     left: 10px;
     z-index: 15;
@@ -64,6 +119,9 @@
     color: #FFF;
     padding: 0px;
     font-weight: bold;
+  }
+  .status-bar {
+    background: #528499 !important;
   }
   .status-message {
     font-weight: bold;
@@ -73,32 +131,71 @@
     padding: 10px 0px;
     color: #999;
   }
-  .status-progress-bar.status-completed {
-    background:#61BF55;
-  }
-  .status-progress-bar.status-failed {
-   background: #E47E74;
-  }
-  .status-progress-bar.status-working {
-    background: #528499;
-  }
-  .status-progress-bar.status-killed {
-    background: #B84F16;
+  .status-badge {
+    color: #fff;
   }
   .status-completed {
-    color:#61BF55;
+    background:#61BF55;
   }
   .status-failed {
-    color: #E47E74;
+    background: #E47E74;
   }
   .status-working {
-    color: #528499;
+    background: #528499;
   }
   .status-killed {
-    color: #B84F16;
+    background: #B84F16;
   }
   #main a.kill:link, #main a.kill:visited {
     color: #B84F16;
     font-weight: bold;
   }
+
+  .digg_pagination {
+  background: white;
+  cursor: default;
+  /* self-clearing method: */ }
+  .digg_pagination a, .digg_pagination span, .digg_pagination em {
+    padding: 0.2em 0.5em;
+    display: block;
+    float: left;
+    margin-right: 1px; }
+  .digg_pagination .disabled {
+    color: #999999;
+    border: 1px solid #dddddd; }
+  .digg_pagination .current {
+    font-style: normal;
+    font-weight: bold;
+    background: #2e6ab1;
+    color: white;
+    border: 1px solid #2e6ab1; }
+  .digg_pagination a {
+    text-decoration: none;
+    color: #105cb6;
+    border: 1px solid #9aafe5; }
+    .digg_pagination a:hover, .digg_pagination a:focus {
+      color: #000033;
+      border-color: #000033; }
+  .digg_pagination .page_info {
+    background: #2e6ab1;
+    color: white;
+    padding: 0.4em 0.6em;
+    width: 22em;
+    margin-bottom: 0.3em;
+    text-align: center; }
+    .digg_pagination .page_info b {
+      color: #000033;
+      background: #6aa6ed;
+      padding: 0.1em 0.25em; }
+  .digg_pagination:after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden; }
+  * html .digg_pagination {
+    height: 1%; }
+  *:first-child + html .digg_pagination {
+    overflow: hidden; }
+
 </style>
