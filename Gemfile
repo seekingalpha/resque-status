@@ -4,6 +4,8 @@ gem 'resque', '~>1.19'
 gem 'will_paginate', '~> 3.3'
 
 group :test do
+  gem 'byebug'
+  gem 'timecop'
   gem 'mocha', '~>0.9'
   gem 'minitest', '~> 5.5'
 end
