@@ -45,6 +45,15 @@ module Resque
           val
         end
 
+        # Atomically increment a value in the hash
+        def self.incr(uuid, key, by = 1)
+          sleep(0.01) until redis.set("lock:update:#{uuid}", 1, nx: true, ex: 10)
+          hash = get(uuid)
+          set(uuid, hash, key => hash[key] + by)
+        ensure
+          redis.del("lock:update:#{uuid}")
+        end
+
         # clear statuses from redis passing an optional range. See `statuses` for info
         # about ranges
         def self.clear(range_start = nil, range_end = nil)
