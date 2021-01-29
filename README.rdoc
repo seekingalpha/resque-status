@@ -171,6 +171,26 @@ The child jobs will not call callbacks for each job, only once when all are fini
 When parent job is killed using <tt>Resque::Plugins::Status::Hash.kill</tt> it will skip all child jobs that didn't start yet,
 and once all child jobs are either finished or skipped, it will set the parent job's status to "killed" and call "on_killed"
 
+=== Retry failed job
+
+There are 2 optional settings that allow to retry failed job.
+
+    self.retry_failed = 2
+
+will retry only regular (not child) failed job 2 times (totally 3 runs), and
+
+    self.retry_failed_child = 3
+
+will retry child job 3 times (total 4 runs).
+
+Not setting it or setting it to zero disables the retry. The retry will work both in case of exception that failed the job
+or if the failed status was set manually.
+
+Note: The retry limit works by incrementing 'retry_num' status field and if changed manually will break.
+
+Note2: <tt>on_failed</tt> callback, if defined, will be called each time.
+
+
 === Expiration
 
 Since Redis is RAM based, we probably don't want to keep these statuses around forever
