@@ -123,6 +123,70 @@ is raised if the job is killed.
 
   at(steps_completed, total_steps, "${steps_completed} of #{total_steps} steps completed!")
 
+=== Distributed job
+
+With Status you can create a destributed parent/child job, that will run some part of the processing,
+in multiple, potentially parallel child jobs and then do somthing when all child jobs will finish.
+To do this you first need to define <tt>perform_child</tt> method. This method will be called in child jobs
+instead of <tt>perform</tt>. Then, in the parent's <tt>perform</tt>, you need initiate parent using <tt>init_parent(total)</tt>,
+and finally queue children using <tt>enqueue_child(options)</tt>.
+The progress is tracked automatically using regular "num" and "total" fields. The "total" will be set to
+the "total" from <tt>init_parent</tt> and <tt>num</tt> will be incresed by 1 for each finished job, so DO NOT change them manually.
+When all child jobs will finish, the last one will call <tt>onsuccess</tt> in its own context.
+
+Example:
+
+    class VeryHeavyJob
+      include Resque::Plugins::Status
+
+      def perform
+        init_parent(options['items'].size)
+        options['items'].each do |item|
+          enqueue_child('item' => item)
+        end
+      end
+
+      def perform_child
+        process_item(options['item'])
+      end
+
+      def on_success
+        send_email "yey! all items finished"
+      end
+    end
+
+If you need to get status/options of the parent, you can use <tt>parent_uuid</tt> method and get the status, like this:
+
+    Resque::Plugins::Status::Hash.get(parent_uuid)
+
+
+The statuses of child jobs will be deleted, unless it failed. In case of failure on child level, the parent will stay "working"
+forever, and child status will be preserved, so that you can investigate the issue and retry the child. Once it succeeds,
+it will mark the parent as completed.
+The child jobs will not call callbacks for each job, only once when all are finished.
+When parent job is killed using <tt>Resque::Plugins::Status::Hash.kill</tt> it will skip all child jobs that didn't start yet,
+and once all child jobs are either finished or skipped, it will set the parent job's status to "killed" and call "on_killed"
+
+=== Retry failed job
+
+There are 2 optional settings that allow to retry failed job.
+
+    self.retry_failed = 2
+
+will retry only regular (not child) failed job 2 times (totally 3 runs), and
+
+    self.retry_failed_child = 3
+
+will retry child job 3 times (total 4 runs).
+
+Not setting it or setting it to zero disables the retry. The retry will work both in case of exception that failed the job
+or if the failed status was set manually.
+
+Note: The retry limit works by incrementing 'retry_num' status field and if changed manually will break.
+
+Note2: <tt>on_failed</tt> callback, if defined, will be called each time.
+
+
 === Expiration
 
 Since Redis is RAM based, we probably don't want to keep these statuses around forever

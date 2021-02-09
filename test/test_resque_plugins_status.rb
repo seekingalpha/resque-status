@@ -363,6 +363,89 @@ class TestResquePluginsStatus < Minitest::Test
 
     end
 
-  end
+    describe 'with WorkingParentJob' do
+      before do
+        Resque.stubs(:inline?).returns(true)
+        @uuid = WorkingParentJob.create
+      end
 
+      it 'should have ran all the children' do
+        assert_equal(%w[0 1 2], Resque.redis.lrange('child_jobs_done', 0, -1))
+        onsuccess_jobs = Resque.redis.lrange('child_on_success', 0, -1)
+        assert_equal 1, onsuccess_jobs.size
+        assert_includes(%w[0 1 2], onsuccess_jobs[0])
+        status = Resque::Plugins::Status::Hash.get(@uuid)
+        assert_equal 3, status.num
+        assert_equal 'completed', status.status
+      end
+    end
+
+    describe 'with failing WorkingParentJob' do
+      before do
+        Resque.stubs(:inline?).returns(true)
+        @options = { 'error' => 'test error' }
+        @uuid = Resque::Plugins::Status::Hash.generate_uuid
+      end
+
+      after do
+        WorkingParentJob.retry_failed = nil
+        WorkingParentJob.retry_failed_child = nil
+      end
+
+      it 'can retry parent' do
+        WorkingParentJob.retry_failed = 2
+        assert_raises RuntimeError do
+          WorkingParentJob.perform(@uuid, @options)
+        end
+
+        status = Resque::Plugins::Status::Hash.get(@uuid)
+        assert status.failed?
+        assert_equal 2, status['retry_num']
+        assert_equal '3', Resque.redis.get('parent_start_count')
+        assert_equal(%w[0 1 2] * 3, Resque.redis.lrange('child_jobs_done', 0, -1))
+      end
+
+      it 'can retry child' do
+        WorkingParentJob.retry_failed_child = 1
+        assert_raises RuntimeError do
+          WorkingParentJob.perform(@uuid, @options)
+        end
+
+        status = Resque::Plugins::Status::Hash.get(@uuid)
+        assert status.failed?
+        assert_nil status['retry_num']
+        assert_equal '1', Resque.redis.get('parent_start_count')
+        assert_equal(%w[0 0 1 1 2 2], Resque.redis.lrange('child_jobs_done', 0, -1))
+      end
+
+      it 'can retry parent and child' do
+        WorkingParentJob.retry_failed = 2
+        WorkingParentJob.retry_failed_child = 1
+        assert_raises RuntimeError do
+          WorkingParentJob.perform(@uuid, @options)
+        end
+
+        status = Resque::Plugins::Status::Hash.get(@uuid)
+        assert status.failed?
+        assert_equal 2, status['retry_num']
+        assert_equal '3', Resque.redis.get('parent_start_count')
+        assert_equal(%w[0 0 1 1 2 2] * 3, Resque.redis.lrange('child_jobs_done', 0, -1))
+      end
+    end
+
+    describe 'with self killing WorkingParentJob' do
+      before do
+        Resque.stubs(:inline?).returns(true)
+        @uuid = WorkingParentJob.create('self_kill' => true)
+      end
+
+      it 'should skip all the children' do
+        assert_equal([], Resque.redis.lrange('child_jobs_done', 0, -1))
+        assert_equal([], Resque.redis.lrange('child_on_success', 0, -1))
+        status = Resque::Plugins::Status::Hash.get(@uuid)
+        assert_equal 3, status.num
+        assert_equal 'killed', status.status
+      end
+    end
+  end
 end
