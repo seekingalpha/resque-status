@@ -307,8 +307,13 @@ module Resque
           Resque::Plugins::Status::Hash.set(parent_uuid, parent, 'status' => STATUS_KILLED)
           on_killed if respond_to?(:on_killed)
         else
-          Resque::Plugins::Status::Hash.set(parent_uuid, parent, 'status' => STATUS_COMPLETED, 'message' => '')
-          on_success if respond_to?(:on_success)
+          begin
+            on_success if respond_to?(:on_success)
+            Resque::Plugins::Status::Hash.set(parent_uuid, parent, 'status' => STATUS_COMPLETED, 'message' => '')
+          rescue => e
+            Resque::Plugins::Status::Hash.set(parent_uuid, parent, 'status' => STATUS_FAILED, 'message' => "on_success failed with #{e.class}/#{e}")
+            raise
+          end
         end
       end
 
