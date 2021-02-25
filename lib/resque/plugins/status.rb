@@ -110,7 +110,7 @@ module Resque
         # rejected by a before_enqueue hook.
         def enqueue_to(queue, klass, options = {})
           uuid = Resque::Plugins::Status::Hash.generate_uuid
-          Resque::Plugins::Status::Hash.create uuid, :options => options
+          Resque::Plugins::Status::Hash.create uuid, 'options' => options, 'name' => name, 'started_at' => Time.now.to_i
 
           if Resque.enqueue_to(queue, klass, uuid, options)
             uuid
