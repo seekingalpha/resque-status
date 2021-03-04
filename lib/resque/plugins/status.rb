@@ -297,8 +297,16 @@ module Resque
         Resque.enqueue(self.class, uuid, options)
       end
 
+      def update_parent(&block)
+        Resque::Plugins::Status::Hash.update(parent_uuid, &block)
+      end
+
       def child_complete
-        parent = Resque::Plugins::Status::Hash.incr(parent_uuid, 'num', 1)
+        parent = update_parent do |st|
+          st['num'] += 1
+          st['message'] = "Working #{st['num']}/#{st['total']}"
+          st['time'] = Time.now.to_i
+        end
         Resque::Plugins::Status::Hash.remove(uuid)
         return if parent.num != parent.total
 
@@ -308,7 +316,7 @@ module Resque
         else
           begin
             on_success if respond_to?(:on_success)
-            Resque::Plugins::Status::Hash.set(parent_uuid, parent, 'status' => STATUS_COMPLETED, 'message' => '')
+            Resque::Plugins::Status::Hash.set(parent_uuid, parent, 'status' => STATUS_COMPLETED, 'message' => "Finished in #{parent['num']} jobs")
           rescue => e
             Resque::Plugins::Status::Hash.set(parent_uuid, parent, 'status' => STATUS_FAILED, 'message' => "on_success failed with #{e.class}/#{e}")
             raise

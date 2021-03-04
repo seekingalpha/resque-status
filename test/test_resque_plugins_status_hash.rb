@@ -162,21 +162,22 @@ class TestResquePluginsStatusHash < Minitest::Test
       end
     end
 
-    describe '.incr' do
+    describe '.update' do
       before do
         @uuid = Resque::Plugins::Status::Hash.generate_uuid
         Resque::Plugins::Status::Hash.set(@uuid, 'num' => 10)
       end
 
-      it 'increments value' do
-        Resque::Plugins::Status::Hash.incr(@uuid, 'num')
-        assert_equal 11, Resque::Plugins::Status::Hash.get(@uuid).num
-        Resque::Plugins::Status::Hash.incr(@uuid, 'num', 4)
-        assert_equal 15, Resque::Plugins::Status::Hash.get(@uuid).num
-        Resque::Plugins::Status::Hash.incr(@uuid, 'num', -5)
-        assert_equal 10, Resque::Plugins::Status::Hash.get(@uuid).num
-        10.times.map { Thread.new { Resque::Plugins::Status::Hash.incr(@uuid, 'num') } }.each(&:join)
-        assert_equal 20, Resque::Plugins::Status::Hash.get(@uuid).num
+      it 'updates the hash' do
+        Resque::Plugins::Status::Hash.update(@uuid) { |h| h['num'] += 5; h['message'] = 'hello' }
+        hash = Resque::Plugins::Status::Hash.get(@uuid)
+        assert_equal 15, hash.num
+        assert_equal 'hello', hash.message
+      end
+
+      it 'is threadsafe' do
+        20.times.map { Thread.new { Resque::Plugins::Status::Hash.update(@uuid) { |h| h['num'] += 1 } } }.each(&:join)
+        assert_equal 30, Resque::Plugins::Status::Hash.get(@uuid).num
       end
     end
 

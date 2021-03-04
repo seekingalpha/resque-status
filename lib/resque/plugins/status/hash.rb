@@ -45,11 +45,12 @@ module Resque
           val
         end
 
-        # Atomically increment a value in the hash
-        def self.incr(uuid, key, by = 1)
+        # Atomically update the status in block. Example:
+        # status.update { |st| st['num'] += 1; st['message'] = "finished #{st['num']}" }
+        # Note: the updating on this UUID is locking using redis for 10s, so make sure the update is immediate
+        def self.update(uuid, &block)
           sleep(0.01) until redis.set("lock:update:#{uuid}", 1, nx: true, ex: 10)
-          hash = get(uuid)
-          set(uuid, hash, key => hash[key] + by)
+          set(uuid, get(uuid).tap(&block))
         ensure
           redis.del("lock:update:#{uuid}")
         end
