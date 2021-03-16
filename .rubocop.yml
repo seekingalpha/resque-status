@@ -1,5 +1,2 @@
-Metrics/AbcSize:
-  Max: 30  # 15
-
 Style/RescueStandardError:
   Enabled: false
