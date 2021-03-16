@@ -58,7 +58,6 @@ module Resque
       end
 
       module ClassMethods
-        attr_accessor :retry_failed, :retry_failed_child
 
         # The default queue is :statused, this can be ovveridden in the specific job
         # class to put the jobs on a specific worker queue
@@ -166,7 +165,6 @@ module Resque
         job_status = status
         if job_status&.failed?
           on_failure(job_status.message) if respond_to?(:on_failure)
-          retry_if_can
           return
         elsif @is_parent_job
           return
@@ -179,23 +177,20 @@ module Resque
         on_killed if respond_to?(:on_killed)
       rescue => e
         failed("The task failed because of an error: #{e}")
-        on_failure(e) if respond_to?(:on_failure)
-        retry_if_can
-        raise e unless respond_to?(:on_failure)
+        if respond_to?(:on_failure)
+          on_failure(e)
+        else
+          raise e
+        end
       end
 
       def child_safe_perform!
         set_status('status' => STATUS_WORKING, 'started_at' => Time.now.to_i)
         perform_child unless parent_should_kill?
         completed if status&.working?
-        if status&.failed?
-          retry_if_can
-        else
-          child_complete
-        end
+        child_complete unless status&.failed?
       rescue => e
         failed("The task failed because of an error: #{e}")
-        retry_if_can
         raise e
       end
 
@@ -288,14 +283,6 @@ module Resque
       end
 
       private
-
-      def retry_if_can
-        retry_limit = parent_uuid ? self.class.retry_failed_child : self.class.retry_failed
-        return if status['retry_num'].to_i >= retry_limit.to_i
-
-        set_status('retry_num' => status['retry_num'].to_i + 1, 'status' => STATUS_QUEUED)
-        Resque.enqueue(self.class, uuid, options)
-      end
 
       def update_parent(&block)
         Resque::Plugins::Status::Hash.update(parent_uuid, &block)
