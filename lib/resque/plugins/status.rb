@@ -133,8 +133,13 @@ module Resque
         # options.
         #
         # You should not override this method, rahter the <tt>perform</tt> instance method.
-        def perform(uuid=nil, options = {})
-          uuid ||= Resque::Plugins::Status::Hash.generate_uuid
+        def perform(uuid = nil, options = {})
+          if (!uuid || uuid.is_a?(::Hash)) && options == {}
+            options = uuid || {}
+            uuid = Resque::Plugins::Status::Hash.generate_uuid
+            Resque::Plugins::Status::Hash.create uuid, options: options
+          end
+
           instance = new(uuid, options)
           instance.parent_uuid ? instance.child_safe_perform! : instance.safe_perform!
           instance
@@ -279,7 +284,7 @@ module Resque
       def enqueue_child(options)
         raise 'Parent not initiated' unless @is_parent_job
 
-        self.class.create(options.merge('_parent_uuid' => uuid))
+        Resque.enqueue(self.class, options.merge('_parent_uuid' => uuid))
       end
 
       private
