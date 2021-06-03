@@ -285,7 +285,7 @@ module Resque
       def enqueue_child(options)
         raise 'Parent not initiated' unless @is_parent_job
 
-        self.class.create(options.merge('_parent_uuid' => uuid))
+        Resque.enqueue(self.class, options.merge('_parent_uuid' => uuid))
       end
 
       private
