@@ -8,7 +8,6 @@ module Resque
       # the common status attributes. It also has a number of class methods for
       # creating/updating/retrieving status objects from Redis
       class Hash < ::Hash
-
         # Create a status, generating a new UUID, passing the message to the status
         # Returns the UUID of the new status.
         def self.create(uuid, *messages)
@@ -101,9 +100,19 @@ module Resque
         # @param [Numeric] range_end The optional ending range
         # @example retuning the last 20 statuses
         #   Resque::Plugins::Status::Hash.statuses(0, 20)
-        def self.statuses(range_start = nil, range_end = nil)
+        def self.statuses(range_start = nil, range_end = nil, filters = [])
           ids = status_ids(range_start, range_end)
-          mget(ids).compact || []
+          statuses = mget(ids).compact || []
+          filter_statuses(statuses, filters)
+        end
+
+        def self.filter_statuses(statuses, filters)
+          return statuses if filters.empty?
+
+          statuses = statuses.filter {|status| status.status == filters[:status] } if filters[:status]
+          statuses = statuses.select { |job| job.name =~ /#{filters[:job]}/i } if filters[:job]
+
+          statuses
         end
 
         # Return the <tt>num</tt> most recent status/job UUIDs in reverse chronological order.
@@ -216,6 +225,7 @@ module Resque
         hash_accessor :status
         hash_accessor :message
         hash_accessor :time
+        hash_accessor :started_at
         hash_accessor :options
 
         hash_accessor :num
@@ -229,7 +239,7 @@ module Resque
           super nil
           base_status = {
             'time' => Time.now.to_i,
-            'status' => Resque::Plugins::Status::STATUS_QUEUED
+            'status' => Resque::Plugins::Status::STATUS_QUEUED,
           }
           base_status['uuid'] = args.shift if args.length > 1
           status_hash = args.inject(base_status) do |final, m|
@@ -255,7 +265,11 @@ module Resque
         # Return the time of the status initialization. If set returns a <tt>Time</tt>
         # object, otherwise returns nil
         def time
-          time? ? Time.at(self['time']) : nil
+          time? ? Time.at(self['time'].to_i) : nil
+        end
+
+        def started_at
+          started_at? ? Time.at(self['started_at'].to_i) : nil
         end
 
         Resque::Plugins::Status::STATUSES.each do |status|

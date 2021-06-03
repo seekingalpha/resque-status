@@ -1,7 +1,12 @@
 <%= status_view :status_styles, :layout => false %>
 
 <h1 class='wi'>Statuses</h1>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
+<%
+  status_filters = %w[working completed failed killed]
+  filters = @filters || {}
+%>
 <%unless @statuses.empty?%>
   <form method="POST" action="<%= u(:statuses) %>/clear" class='clear-failed'>
     <input type='submit' name='' value='Clear Statuses' onclick='return confirm("Are you absolutely sure? This cannot be undone.");' />
@@ -12,32 +17,78 @@
   <form method="POST" action="<%= u(:statuses) %>/clear/failed" class='clear-failed'>
     <input type='submit' name='' value='Clear Failed Statuses' onclick='return confirm("Are you absolutely sure? This cannot be undone.");' />
   </form>
-<%end%>
+  <%end%>
+  <div class="card form-inline form-group" style="width: 450px;">
+    <div class="card-body">
+      <h4>Filters</h4>
+      <span class="filter">Status</span>
+        <select class="form-control" id="status_filter">
+          <option></option>
+          <% status_filters.each do |status_filter| %>
+            <option <%= status_filter == filters[:status] ? 'selected' : nil %> value=<%= status_filter %>><%= status_filter.capitalize %></option>
+          <% end %>
+        </select>
+        <span class="filter">Job Name</span>
+        <input class="form-control" type="text" id="job_name" value="<%= filters[:job] %>" />
+      </div>
+  </div>
+
 
 <p class='intro'>These are recent jobs created with the Resque::Plugins::Status class</p>
-<table class="vertically-top">
+<table class="table table-bordered table-hover">
+<thead class="thead-dark">
   <tr>
-    <th>ID</th>
-    <th>Name</th>
-    <th>Status</th>
-    <th>Last Updated</th>
-    <th class="progress">% Complete</th>
-    <th>Message</th>
-    <th>Kill</th>
+    <th style="width: 5%;">Status</th>
+    <th style="width: 30%;">Name</th>
+    <th style="width: 5%;">Runtime</th>
+    <th style="width: 5%;">Start Time</th>
+    <th style="width: 5%;">Update Time</th>
+    <th style="width: 7%;">Progress</th>
+    <th style="width: 40%;">Message</th>
+    <th>Actions</th>
   </tr>
+</thead>
+<tbody>
+
   <% unless @statuses.empty? %>
     <% @statuses.each do |status| %>
+    <%
+        duration = Time.now - status.started_at.to_i if status.working?
+        duration = status.time.to_i - status.started_at.to_i unless status.working?
+        progressbar_styles = []
+        progressbar_styles << 'progress-bar-animated' if status.working?
+        progressbar_styles << 'progress-bar-striped' if status.working?
+        progressbar_styles << 'bg-info' if status.working?
+        progressbar_styles << 'bg-danger' if status.failed? || status.killed?
+        progressbar_styles << 'bg-success' if status.completed?
+     %>
     <tr>
-      <td><a href="<%= u(:statuses) %>/<%= status.uuid %>"><%= status.uuid %></a></td>
-      <td><%= status.name %></td>
-      <td class="status status-<%= status.status %>"><%= status.status %></td>
-      <td class="time"><%= status.time.strftime("%Y/%m/%d %H:%M:%S %z") %></td>
-      <td class="progress">
-        <div class="progress-bar" style="width:<%= status.pct_complete %>%">&nbsp;</div>
-        <div class="progress-pct"><%= status.pct_complete ? "#{status.pct_complete}%" : '' %></div>
+      <td>
+        <span class="badge status-badge status-<%= status.status %>">
+          <%= status.status.capitalize %>
+        </span>
       </td>
-      <td><%= status.message %></td>
-      <td><% if status.killable? %><a href="<%= u(:statuses) %>/<%= status.uuid %>/kill" class="kill">Kill</a><% end %></td>
+      <td class="job-name">
+         <div>
+          <a href="<%= u(:statuses) %>/<%= status.uuid %>"><%= status.name %></a>
+        </div>
+      </td>
+      <td class="duration"><%= duration.to_i %> s</td>
+     <td><%= status.started_at&.strftime("%Y-%m-%d %H:%M:%S") %></td>
+      <td class="tick_time"><%= status.time.strftime("%Y-%m-%d %H:%M:%S") %></td>
+      <td class="" style="width:120px">
+<div class="progress">
+  <div class="progress-bar <%= progressbar_styles.join(' ') %>" role="progressbar" style="width: <%=status.pct_complete%>%;" aria-valuenow="<%=status.pct_complete %>" aria-valuemin="0" aria-valuemax="100">
+    <%=status.pct_complete%>%
+  </div>
+</div>
+      </td>
+      <td>
+        <div class="message"><%= status.message %></div>
+      </td>
+      <td>
+      <% if status.killable? %><a class="kill" href="<%= u(:statuses) %>/<%= status.uuid %>/kill">Kill</a><% end %>
+      </td>
     </tr>
     <% end %>
   <% else %>
@@ -45,17 +96,16 @@
     <td colspan="7" class='no-data'>No Statuses right now...</td>
   </tr>
   <% end %>
+</tbody>
 </table>
+<div class="digg_pagination">
+  <%= will_paginate @statuses, :page_links => true %>
+</div>
 
-<% unless @statuses.empty? %>
-  <%= partial :next_more, :start => @start, :size => @size, :per_page => per_page %>
-<% end %>
-
-<%= status_poll(@start) %>
+<!-- <%= status_poll(@start) %> -->
 
 <script type="text/javascript" charset="utf-8">
   jQuery(function($) {
-
     $('a.kill').click(function(e) {
       e.preventDefault();
       var $link = $(this),
@@ -75,5 +125,32 @@
       }
     });
 
+    $('#status_filter').change(function() {
+      const params = (new URL(document.location)).searchParams;
+      
+      const status = this.value;
+      if (status) {
+      params.set("filters[status]", status);
+      }
+      else {
+        params.delete('filters[status]');
+      }
+      window.location.search = params.toString();
+    });
+
+    $('#job_name').on('keypress',function(e) {
+      const params = (new URL(document.location)).searchParams;
+      
+      if (e.which === 13) {
+        const job = $(this).val();
+        if (job) {
+          params.set("filters[job]", job);
+        }
+        else {
+          params.delete('filters[job]');
+        }
+        window.location.search = params.toString();
+      }
+    })
   });
 </script>
