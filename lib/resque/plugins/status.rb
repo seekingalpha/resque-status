@@ -109,7 +109,7 @@ module Resque
         # rejected by a before_enqueue hook.
         def enqueue_to(queue, klass, options = {})
           uuid = Resque::Plugins::Status::Hash.generate_uuid
-          Resque::Plugins::Status::Hash.create uuid, :options => options
+          Resque::Plugins::Status::Hash.create uuid, 'options' => options, 'name' => name, 'started_at' => Time.now.to_i
 
           if Resque.enqueue_to(queue, klass, uuid, options)
             uuid
@@ -165,7 +165,7 @@ module Resque
       # If an error occurs within the job's work, it will set the status as failed and
       # re-raise the error.
       def safe_perform!
-        set_status({'status' => STATUS_WORKING})
+        set_status({'status' => STATUS_WORKING, 'started_at' => Time.now.to_i })
         perform
         job_status = status
         if job_status&.failed?
@@ -254,17 +254,16 @@ module Resque
 
       # set the status to 'completed' passing along any addional messages
       def completed(*messages)
-        set_status({
+        set_status(*messages, {
           'status' => STATUS_COMPLETED,
-          'message' => "Completed at #{Time.now}"
-        }, *messages)
+          'message' => '',
+        })
       end
 
       # kill the current job, setting the status to 'killed' and raising <tt>Killed</tt>
       def kill!
         set_status({
           'status' => STATUS_KILLED,
-          'message' => "Killed at #{Time.now}"
         })
         raise Killed
       end
@@ -322,9 +321,8 @@ module Resque
       end
 
       def set_status(*args)
-        self.status = [status, {'name'  => self.name}, args].flatten
+        self.status = [status, {'name'  => self.name, 'time' => Time.now.to_i}, args].flatten
       end
-
     end
   end
 end
